@@ -76,6 +76,7 @@ def ver_producto_por_id(token=None):
         print("El ID debe ser un número entero.")
 # Función para crear un nuevo producto
 def crear_producto(token):
+    token=obtener_token()
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
     # Solicitar al usuario los detalles del nuevo producto
     nombre = input("Nombre del producto: ")
@@ -102,6 +103,7 @@ def crear_producto(token):
 # Función para actualizar un producto
 def actualizar_producto(token):
     try:
+        token=obtener_token()
         id_producto = int(input("Ingrese el ID del producto que desea actualizar: "))
         headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
@@ -135,7 +137,15 @@ def actualizar_producto(token):
 # Función para eliminar un producto
 def eliminar_producto(token):
     try:
+        token=obtener_token()
         id_producto = int(input("Ingrese el ID del producto que desea eliminar: "))
+        
+        # Confirmar acción
+        confirmar = input(f"¿Está seguro que desea eliminar el producto con ID {id_producto}? (si/no): ").strip().lower()
+        if confirmar != 'si':
+            print("Operación cancelada.")
+            return
+        
         headers = {'Authorization': f'Bearer {token}'}
 
         response = requests.delete(f'{BASE_URL}{id_producto}/', headers=headers)
@@ -175,7 +185,7 @@ def mostrar_menu():
         elif opcion == '5':
             eliminar_producto(token)
         elif opcion == '6':
-            print("Saliendo del programa.")
+            print("Saliendo del programa....")
             break
         else:
             print("Opción no válida. Intente de nuevo.")
