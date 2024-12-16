@@ -7,12 +7,29 @@ BASE_URL = 'http://127.0.0.1:8000/api/productos/'
 
 # Función para obtener el token de acceso
 def obtener_token():
-    print("\nPara acceder al sistema, ingrese su token:")
-    token = getpass("Token de acceso: ")  # Esto oculta la entrada del token
-    return token  # Retorna el token para ser usado en las solicitudes
+    while True:
+        print("\nPara acceder al sistema, ingrese su token:")
+        token = getpass("Token de acceso: ")  # Esto oculta la entrada del token
+        if validar_token(token):  # Validamos el token
+            return token
+        else:
+            print("Token inválido. Por favor, intente nuevamente.")
+
+# Función para validar el token con una solicitud de prueba
+def validar_token(token):
+    headers = {'Authorization': f'Bearer {token}'}
+    # Realizamos una solicitud simple a la API para validar el token
+    response = requests.get(BASE_URL, headers=headers)
+
+    # Si el token es válido, la API debería devolver un código 200
+    if response.status_code == 200:
+        return True
+    else:
+        print(f"Token no válido o expirado: {response.text}")
+        return False
 
 # Función para ver todos los productos
-def ver_productos():
+def ver_productos(token):
     headers = {'Authorization': f'Bearer {token}'}
     response = requests.get(BASE_URL, headers=headers)
 
@@ -22,10 +39,10 @@ def ver_productos():
         for producto in productos:
             print(f"ID: {producto['id']} - Nombre: {producto['nombre']}")
     else:
-        print("Error al obtener los productos:", response.text)
+        print(f"Error al obtener los productos: {response.text}")
 
 # Función para ver un producto por su ID
-def ver_producto_por_id():
+def ver_producto_por_id(token):
     try:
         id_producto = int(input("Ingrese el ID del producto que desea ver: "))
         headers = {'Authorization': f'Bearer {token}'}
@@ -46,8 +63,7 @@ def ver_producto_por_id():
         print("El ID debe ser un número entero.")
 
 # Función para crear un nuevo producto
-def crear_producto():
-    token = obtener_token()  # Solicitar el token antes de crear un producto
+def crear_producto(token):
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
     nombre = input("Nombre del producto: ")
@@ -57,7 +73,6 @@ def crear_producto():
     cantidad_max = int(input("Cantidad máxima: "))
     precio = float(input("Precio del producto: "))
 
-    # Crear un diccionario con los datos del producto
     producto_data = {
         'nombre': nombre,
         'descripcion': descripcion,
@@ -75,13 +90,11 @@ def crear_producto():
         print(f"Error al crear el producto: {response.text}")
 
 # Función para actualizar un producto
-def actualizar_producto():
-    token = obtener_token()  # Solicitar el token antes de actualizar un producto
+def actualizar_producto(token):
     try:
         id_producto = int(input("Ingrese el ID del producto que desea actualizar: "))
         headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
-        # Solicitar nuevos datos para el producto
         nombre = input("Nuevo nombre del producto: ")
         descripcion = input("Nueva descripción del producto: ")
         marca = input("Nueva marca del producto: ")
@@ -108,8 +121,7 @@ def actualizar_producto():
         print("El ID debe ser un número entero.")
 
 # Función para eliminar un producto
-def eliminar_producto():
-    token = obtener_token()  # Solicitar el token antes de eliminar un producto
+def eliminar_producto(token):
     try:
         id_producto = int(input("Ingrese el ID del producto que desea eliminar: "))
         headers = {'Authorization': f'Bearer {token}'}
@@ -125,7 +137,6 @@ def eliminar_producto():
 
 # Menú interactivo
 def mostrar_menu():
-    global token  # Declarar la variable token como global
     token = obtener_token()  # Solicitar el token al inicio para acceder al menú
 
     while True:
@@ -140,15 +151,15 @@ def mostrar_menu():
         opcion = input("Seleccione una opción: ")
 
         if opcion == '1':
-            ver_productos()
+            ver_productos(token)
         elif opcion == '2':
-            ver_producto_por_id()
+            ver_producto_por_id(token)
         elif opcion == '3':
-            crear_producto()
+            crear_producto(token)
         elif opcion == '4':
-            actualizar_producto()
+            actualizar_producto(token)
         elif opcion == '5':
-            eliminar_producto()
+            eliminar_producto(token)
         elif opcion == '6':
             print("Saliendo del programa.")
             break
