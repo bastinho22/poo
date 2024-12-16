@@ -4,6 +4,8 @@ from getpass import getpass  # Para ocultar la entrada del token
 
 # URL base de la API
 BASE_URL = 'http://127.0.0.1:8000/api/productos/'
+TOKEN_URL = 'http://127.0.0.1:8000/api/token/'  # URL para obtener el token
+TOKEN_REFRESH_URL = 'http://127.0.0.1:8000/api/token/refresh/'  # URL para refrescar el token
 
 # Función para obtener el token de acceso
 def obtener_token():
@@ -13,12 +15,11 @@ def obtener_token():
         if validar_token(token):  # Validamos el token
             return token
         else:
-            print("Token inválido. Por favor, intente nuevamente.")
+            print("Token inválido o expirado. Por favor, intente nuevamente.")
 
 # Función para validar el token con una solicitud de prueba
 def validar_token(token):
     headers = {'Authorization': f'Bearer {token}'}
-    # Realizamos una solicitud simple a la API para validar el token
     response = requests.get(BASE_URL, headers=headers)
 
     # Si el token es válido, la API debería devolver un código 200
@@ -28,11 +29,24 @@ def validar_token(token):
         print(f"Token no válido o expirado: {response.text}")
         return False
 
-# Función para ver todos los productos
-def ver_productos(token):
-    headers = {'Authorization': f'Bearer {token}'}
-    response = requests.get(BASE_URL, headers=headers)
+# Función para obtener un nuevo token de acceso con el refresh token
+def obtener_nuevo_token(refresh_token):
+    headers = {'Content-Type': 'application/json'}
+    data = {'refresh': refresh_token}
+    response = requests.post(TOKEN_REFRESH_URL, headers=headers, data=json.dumps(data))
 
+    if response.status_code == 200:
+        new_tokens = response.json()
+        print("Nuevo token de acceso obtenido.")
+        return new_tokens['access']
+    else:
+        print("Error al refrescar el token.")
+        return None
+
+# Función para ver todos los productos
+def ver_productos(token=None):
+    headers = {'Authorization': f'Bearer {token}'} if token else {}  # Solo agrega el token si está presente
+    response = requests.get(BASE_URL, headers=headers)
     if response.status_code == 200:
         productos = response.json()
         print("\n----- Lista de Productos -----")
@@ -42,12 +56,11 @@ def ver_productos(token):
         print(f"Error al obtener los productos: {response.text}")
 
 # Función para ver un producto por su ID
-def ver_producto_por_id(token):
+def ver_producto_por_id(token=None):
     try:
         id_producto = int(input("Ingrese el ID del producto que desea ver: "))
-        headers = {'Authorization': f'Bearer {token}'}
+        headers = {'Authorization': f'Bearer {token}'} if token else {}
         response = requests.get(f'{BASE_URL}{id_producto}/', headers=headers)
-
         if response.status_code == 200:
             producto = response.json()
             print("\n----- Detalles del Producto -----")
@@ -61,18 +74,17 @@ def ver_producto_por_id(token):
             print(f"Error al obtener el producto: {response.text}")
     except ValueError:
         print("El ID debe ser un número entero.")
-
 # Función para crear un nuevo producto
 def crear_producto(token):
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-
+    # Solicitar al usuario los detalles del nuevo producto
     nombre = input("Nombre del producto: ")
     descripcion = input("Descripción del producto: ")
     marca = input("Marca del producto: ")
     cantidad_min = int(input("Cantidad mínima: "))
     cantidad_max = int(input("Cantidad máxima: "))
     precio = float(input("Precio del producto: "))
-
+    # Estructura de datos para el nuevo producto
     producto_data = {
         'nombre': nombre,
         'descripcion': descripcion,
@@ -81,9 +93,7 @@ def crear_producto(token):
         'cantidad_max': cantidad_max,
         'precio': precio
     }
-
     response = requests.post(BASE_URL, headers=headers, data=json.dumps(producto_data))
-
     if response.status_code == 201:
         print("\nProducto creado con éxito.")
     else:
@@ -95,6 +105,7 @@ def actualizar_producto(token):
         id_producto = int(input("Ingrese el ID del producto que desea actualizar: "))
         headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
+        # Solicitar al usuario los nuevos datos del producto
         nombre = input("Nuevo nombre del producto: ")
         descripcion = input("Nueva descripción del producto: ")
         marca = input("Nueva marca del producto: ")
@@ -102,6 +113,7 @@ def actualizar_producto(token):
         cantidad_max = int(input("Nueva cantidad máxima: "))
         precio = float(input("Nuevo precio del producto: "))
 
+        # Estructura de datos para actualizar el producto
         producto_data = {
             'nombre': nombre,
             'descripcion': descripcion,
@@ -137,7 +149,8 @@ def eliminar_producto(token):
 
 # Menú interactivo
 def mostrar_menu():
-    token = obtener_token()  # Solicitar el token al inicio para acceder al menú
+    # Solicitar al usuario que ingrese su token de acceso para todas las acciones que lo requieren
+    token = obtener_token()  # Se pide el token una vez al principio
 
     while True:
         print("\n----- Menú de Productos -----")
@@ -150,10 +163,11 @@ def mostrar_menu():
 
         opcion = input("Seleccione una opción: ")
 
+        # Llamadas a las funciones según la opción seleccionada
         if opcion == '1':
-            ver_productos(token)
+            ver_productos(token)  # Pasamos el token para las opciones que requieren autenticación
         elif opcion == '2':
-            ver_producto_por_id(token)
+            ver_producto_por_id(token)  # Pasamos el token para las opciones que requieren autenticación
         elif opcion == '3':
             crear_producto(token)
         elif opcion == '4':
